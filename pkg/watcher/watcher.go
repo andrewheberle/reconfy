@@ -36,6 +36,12 @@ func NewWatcher(input, output, webhook string) (*Watcher, error) {
 		return nil, err
 	}
 
+	// clean up paths
+	input = filepath.Clean(input)
+	if output != "" {
+		output = filepath.Clean(output)
+	}
+
 	// ensure input and output are not the same
 	if input == output {
 		return nil, fmt.Errorf("input and output path cannot be the same")
