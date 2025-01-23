@@ -36,7 +36,7 @@ func main() {
 	}
 
 	// set options based on command line flags
-	opts := make(watcher.WatcherOption, 0)
+	opts := []watcher.WatcherOption{}
 	if output := viper.GetString("output"); output != "" {
 		opts = append(opts, watcher.WithOutput(output))
 	}
