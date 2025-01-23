@@ -179,11 +179,11 @@ func (w *Watcher) watchLoop(watch *fsnotify.Watcher) {
 					}
 
 					// do webhook request
-					req := &http.Request{
+					slog.Info("sending request to webhook", "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod)
+					res, err := w.client.Do(&http.Request{
 						Method: w.webhookMethod,
 						URL:    w.webhookUrl,
-					}
-					res, err := w.client.Do(req)
+					})
 					if err != nil {
 						slog.Error("error calling webhook", "error", err, "input", w.input, "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod)
 						return
