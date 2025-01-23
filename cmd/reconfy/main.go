@@ -35,13 +35,20 @@ func main() {
 		logLevel.Set(slog.LevelDebug)
 	}
 
+	// set options based on command line flags
+	opts := make(watcher.WatcherOption, 0)
+	if output := viper.GetString("output"); output != "" {
+		opts = append(opts, watcher.WithOutput(output))
+	}
+	if url := viper.GetString("webhook-url"); url != "" {
+		opts = append(opts, watcher.WithWebhookUrl(url))
+	}
+	if method := viper.GetString("webhook-method"); method != "" {
+		opts = append(opts, watcher.WithWebhookMethod(method))
+	}
+
 	// set up watcher
-	w, err := watcher.NewWatcher(
-		viper.GetString("input"),
-		viper.GetString("output"),
-		viper.GetString("webhook-url"),
-		viper.GetString("webhook-method"),
-	)
+	w, err := watcher.NewWatcher(viper.GetString("input"), opts...)
 	if err != nil {
 		slog.Error("could not create watcher",
 			"error", err,
