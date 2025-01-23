@@ -1,6 +1,9 @@
 package watcher
 
-import "os"
+import (
+	"os"
+	"net/url"
+)
 
 type WatcherOption func(*Watcher)
 
