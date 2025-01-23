@@ -1,10 +1,10 @@
 package watcher
 
-import "fs"
+import "os"
 
 type WatcherOption func(*Watcher)
 
-func WithFileMode(filemode fs.FileMode) WatcherOption {
+func WithFileMode(filemode os.FileMode) WatcherOption {
 	return func(w *Watcher) {
 		w.FileMode = filemode
 	}
