@@ -70,6 +70,12 @@ func (w *Watcher) Close() error {
 func (w *Watcher) Watch() error {
 	slog.Info("starting watch", "input", w.input, "webhook", w.webhook)
 
+	// generate output first off
+	slog.Debug("doing initial envsubst if required")
+	if err := w.envsubst(); err != nil {
+		return fmt.Errorf("could not perform initial envsubst: %w", err)
+	}
+
 	// start watcher loop
 	go w.watchLoop()
 
@@ -77,12 +83,6 @@ func (w *Watcher) Watch() error {
 	slog.Debug("adding path to watcher", "path", w.input)
 	if err := w.watcher.Add(filepath.Dir(w.input)); err != nil {
 		return fmt.Errorf("could not start watching: %w", err)
-	}
-
-	// generate output first off
-	slog.Debug("doing initial envsubst if required")
-	if err := w.envsubst(); err != nil {
-		return fmt.Errorf("could not perform initial envsubst: %w", err)
 	}
 
 	slog.Debug("waiting here until done")
@@ -100,12 +100,15 @@ func (w *Watcher) watchLoop() {
 
 		timers = make(map[string]*time.Timer)
 	)
+
 	slog.Debug("starting watch loop")
 	defer func() {
 		slog.Debug("watch loop finishing")
 	}()
 
 	for {
+		slog.Debug("waiting...")
+
 		select {
 		case err, ok := <-w.watcher.Errors:
 			if !ok {
