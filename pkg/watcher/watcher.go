@@ -60,6 +60,7 @@ func (w *Watcher) Close() error {
 
 func (w *Watcher) Watch() error {
 	slog.Info("starting watch", "input", w.input, "webhook", w.webhook)
+
 	// Create a new watcher.
 	watch, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -90,7 +91,7 @@ func (w *Watcher) Watch() error {
 
 	// add path to watcher
 	if err := watch.Add(filepath.Dir(w.input)); err != nil {
-		return fmt.Errorf("could not start watching: %w", err)
+		return fmt.Errorf("could not add path to watcher: %w", err)
 	}
 
 	slog.Debug("waiting here until done")
@@ -134,8 +135,15 @@ func (w *Watcher) watchLoop(watch *fsnotify.Watcher) {
 				return
 			}
 
-			slog.Debug("event from watcher", "name", event.Name, "op", event.Op)
+			// check if op was one we are interested in
 			if !event.Has(fsnotify.Write) && event.Has(fsnotify.Create) {
+				slog.Debug("event was not of a type we are watching for", "op", event.Op)
+				continue
+			}
+
+			// check if change was for our watched file
+			if event.Name != w.input {
+				slog.Debug("event was not for our watched file", "name", event.Name)
 				continue
 			}
 
