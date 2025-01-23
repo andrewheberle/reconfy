@@ -18,7 +18,6 @@ import (
 type Watcher struct {
 	input   string
 	output  string
-	watcher *fsnotify.Watcher
 	client  *http.Client
 	webhook string
 	done    chan bool
@@ -42,16 +41,9 @@ func NewWatcher(input, output, webhook string) (*Watcher, error) {
 		return nil, fmt.Errorf("input and output path cannot be the same")
 	}
 
-	// create watcher
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return nil, err
-	}
-
 	return &Watcher{
 		input:    input,
 		output:   output,
-		watcher:  watcher,
 		client:   &http.Client{Timeout: time.Second * 5},
 		webhook:  webhook,
 		done:     make(chan bool),
@@ -61,14 +53,19 @@ func NewWatcher(input, output, webhook string) (*Watcher, error) {
 
 func (w *Watcher) Close() error {
 	// signal done to watcher loop
-	defer func() { close(w.done) }()
+	close(w.done)
 
-	// close watcher
-	return w.watcher.Close()
+	return nil
 }
 
 func (w *Watcher) Watch() error {
 	slog.Info("starting watch", "input", w.input, "webhook", w.webhook)
+	// Create a new watcher.
+	watch, err := fsnotify.NewWatcher()
+	if err != nil {
+		return fmt.Errorf("could not create watcher: %w", err)
+	}
+	defer watch.Close()
 
 	// generate output first off
 	slog.Debug("doing initial envsubst if required")
@@ -77,11 +74,22 @@ func (w *Watcher) Watch() error {
 	}
 
 	// start watcher loop
-	go w.watchLoop()
+	go w.watchLoop(watch)
+
+	slog.Debug("adding path to watcher", "path", w.input)
+	// check input file exists
+	stat, err := os.Lstat(w.input)
+	if err != nil {
+		return fmt.Errorf("could not stat input file %s: %w", w.input, err)
+	}
+
+	// make sure it's not a directory
+	if stat.IsDir() {
+		return fmt.Errorf("%s is a directory", w.input)
+	}
 
 	// add path to watcher
-	slog.Debug("adding path to watcher", "path", w.input)
-	if err := w.watcher.Add(filepath.Dir(w.input)); err != nil {
+	if err := watch.Add(filepath.Dir(w.input)); err != nil {
 		return fmt.Errorf("could not start watching: %w", err)
 	}
 
@@ -92,7 +100,7 @@ func (w *Watcher) Watch() error {
 	return nil
 }
 
-func (w *Watcher) watchLoop() {
+func (w *Watcher) watchLoop(watch *fsnotify.Watcher) {
 	var (
 		mu sync.Mutex
 
@@ -107,18 +115,22 @@ func (w *Watcher) watchLoop() {
 	}()
 
 	for {
-		slog.Debug("waiting...")
+		slog.Debug("waiting for events...")
 
 		select {
-		case err, ok := <-w.watcher.Errors:
+		// read from Errors
+		case err, ok := <-watch.Errors:
 			if !ok {
+				slog.Debug("channel was closed")
 				return
 			}
 
 			slog.Error("error from watcher", "error", err)
 
-		case event, ok := <-w.watcher.Events:
+			// read from Events
+		case event, ok := <-watch.Events:
 			if !ok {
+				slog.Debug("channel was closed")
 				return
 			}
 

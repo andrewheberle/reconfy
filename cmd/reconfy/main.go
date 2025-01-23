@@ -44,9 +44,6 @@ func main() {
 		g.Add(func() error {
 			return w.Watch()
 		}, func(err error) {
-			if err != nil {
-				slog.Error("problem with watcher", "error", err)
-			}
 		})
 	}
 
