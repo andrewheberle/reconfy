@@ -147,14 +147,14 @@ func (w *Watcher) envsubst() error {
 	}
 
 	// write new config file
-	if err := writefile(w.output, data); err != nil {
+	if err := writefile(w.output, data, 0644); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func writefile(filename string, data []byte) error {
+func writefile(filename string, data []byte, mode os.FileMode) error {
 	// Create a temporary file in the same directory
 	dir := filepath.Dir(filename)
 	tempFile, err := os.CreateTemp(dir, "temp*")
@@ -171,6 +171,11 @@ func writefile(filename string, data []byte) error {
 
 	// Close the temporary file
 	if err := tempFile.Close(); err != nil {
+		return err
+	}
+
+	// Set permissions
+	if err := os.Chmod(tempFile.Name(), mode); err != nil {
 		return err
 	}
 
