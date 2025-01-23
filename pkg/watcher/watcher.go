@@ -27,7 +27,7 @@ type Watcher struct {
 	FileMode os.FileMode
 }
 
-func NewWatcher(input, output, webhookUrl, opts ...WatcherOptions) (*Watcher, error) {
+func NewWatcher(input, output, webhookUrl, opts ...WatcherOption) (*Watcher, error) {
 	if input == "" || webhookUrl == "" {
 		return nil, fmt.Errorf("input and webhook-url must be provided")
 	}
