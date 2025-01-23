@@ -16,23 +16,25 @@ import (
 )
 
 type Watcher struct {
-	input   string
-	output  string
-	client  *http.Client
-	webhook string
-	done    chan bool
+	input         string
+	output        string
+	client        *http.Client
+	webhookUrl    *url.URL
+	webhookMethod string
+	done          chan bool
 
 	// File permission bits for output file
 	FileMode os.FileMode
 }
 
-func NewWatcher(input, output, webhook string) (*Watcher, error) {
-	if input == "" || webhook == "" {
-		return nil, fmt.Errorf("input and webhook must be provided")
+func NewWatcher(input, output, webhookUrl, webhookMethod string) (*Watcher, error) {
+	if input == "" || webhookUrl == "" || webhookMethod == "" {
+		return nil, fmt.Errorf("input, webhookUrl and wewebhookMethod must be provided")
 	}
 
 	// validate url
-	if _, err := url.Parse(webhook); err != nil {
+	u, err := url.Parse(webhookUrl)
+	if err != nil {
 		return nil, err
 	}
 
@@ -48,12 +50,13 @@ func NewWatcher(input, output, webhook string) (*Watcher, error) {
 	}
 
 	return &Watcher{
-		input:    input,
-		output:   output,
-		client:   &http.Client{Timeout: time.Second * 5},
-		webhook:  webhook,
-		done:     make(chan bool),
-		FileMode: 0644,
+		input:         input,
+		output:        output,
+		client:        &http.Client{Timeout: time.Second * 5},
+		webhookUrl:    u,
+		webhookMethod: webhookMethod,
+		done:          make(chan bool),
+		FileMode:      0644,
 	}, nil
 }
 
@@ -65,7 +68,7 @@ func (w *Watcher) Close() error {
 }
 
 func (w *Watcher) Watch() error {
-	slog.Info("starting watch", "input", w.input, "webhook", w.webhook)
+	slog.Info("starting watch", "input", w.input, "webhook.url", w.webhookUrl, "webhook.method", w.webhookMethod)
 
 	// Create a new watcher.
 	watch, err := fsnotify.NewWatcher()
@@ -176,9 +179,13 @@ func (w *Watcher) watchLoop(watch *fsnotify.Watcher) {
 					}
 
 					// do webhook request
-					res, err := w.client.Get(w.webhook)
+					req := &http.Request{
+						Method: w.webhookMethod,
+						URL:    w.webhookUrl,
+					}
+					res, err := w.client.Do(req)
 					if err != nil {
-						slog.Error("error calling webhook", "error", err, "input", w.input, "webhook", w.webhook)
+						slog.Error("error calling webhook", "error", err, "input", w.input, "webhook.url", w.webhookUrl, "webhook.method", w.webhookMethod)
 						return
 					}
 

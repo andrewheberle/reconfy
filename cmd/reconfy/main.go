@@ -2,6 +2,7 @@ package main
 
 import (
 	"log/slog"
+	"net/http"
 	"os"
 
 	"github.com/andrewheberle/reconfy/pkg/watcher"
@@ -14,7 +15,8 @@ func main() {
 	// command line args
 	pflag.String("input", "", "Input file path to watch for changes")
 	pflag.String("output", "", "Output path for environment variable substitutions")
-	pflag.String("webhook", "http://localhost:8080", "Webhook URL")
+	pflag.String("webhook.url", "http://localhost:8080", "Webhook URL")
+	pflag.String("webhook.method", http.MethodPost, "Webhook method")
 	pflag.Bool("debug", false, "Enable debug logging")
 	pflag.Parse()
 
@@ -32,9 +34,20 @@ func main() {
 	}
 
 	// set up watcher
-	w, err := watcher.NewWatcher(viper.GetString("input"), viper.GetString("output"), viper.GetString("webhook"))
+	w, err := watcher.NewWatcher(
+		viper.GetString("input"),
+		viper.GetString("output"),
+		viper.GetString("webhook.url"),
+		viper.GetString("webhook.method"),
+	)
 	if err != nil {
-		slog.Error("could not create watcher", "error", err, "input", viper.GetString("input"), "output", viper.GetString("output"), "webhook", viper.GetString("webhook"))
+		slog.Error("could not create watcher",
+			"error", err,
+			"input", viper.GetString("input"),
+			"output", viper.GetString("output"),
+			"webhook.url", viper.GetString("webhook.url"),
+			"webhook.method", viper.GetString("webhook.method"),
+		)
 		os.Exit(1)
 	}
 	defer w.Close()
