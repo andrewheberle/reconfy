@@ -27,7 +27,7 @@ type Watcher struct {
 	FileMode os.FileMode
 }
 
-func NewWatcher(input, opts ...WatcherOption) (*Watcher, error) {
+func NewWatcher(input string, opts ...WatcherOption) (*Watcher, error) {
 	if input == "" {
 		return nil, fmt.Errorf("input must not be empty")
 	}
