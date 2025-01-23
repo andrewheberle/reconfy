@@ -74,7 +74,7 @@ func (w *Watcher) Watch() error {
 	}
 
 	// generate output first off
-	slog.Debug("doing intial envsubst if required")
+	slog.Debug("doing initial envsubst if required")
 	if err := w.envsubst(); err != nil {
 		return fmt.Errorf("could not perform initial envsubst: %w", err)
 	}
