@@ -27,9 +27,21 @@ type Watcher struct {
 	FileMode os.FileMode
 }
 
-func NewWatcher(input, output, webhookUrl, webhookMethod string) (*Watcher, error) {
-	if input == "" || webhookUrl == "" || webhookMethod == "" {
-		return nil, fmt.Errorf("input, webhook-url and webhook-method must be provided")
+func NewWatcher(input, output, webhookUrl, opts ...WatcherOptions) (*Watcher, error) {
+	if input == "" || webhookUrl == "" {
+		return nil, fmt.Errorf("input and webhook-url must be provided")
+	}
+
+	w := new(Watcher)
+
+	// set defaults
+	w.FileMode = 0644
+	w.client = &http.Client{Timeout: time.Second * 5}
+	w.done = make(chan bool)
+
+	// apply options
+	for _, o := range opts {
+		o(w)
 	}
 
 	// validate url
@@ -49,15 +61,11 @@ func NewWatcher(input, output, webhookUrl, webhookMethod string) (*Watcher, erro
 		return nil, fmt.Errorf("input and output path cannot be the same")
 	}
 
-	return &Watcher{
-		input:         input,
-		output:        output,
-		client:        &http.Client{Timeout: time.Second * 5},
-		webhookUrl:    u,
-		webhookMethod: webhookMethod,
-		done:          make(chan bool),
-		FileMode:      0644,
-	}, nil
+	w.input = input
+	w.output = output
+        w.webhookUrl = u
+
+	return w, nil
 }
 
 func (w *Watcher) Close() error {
