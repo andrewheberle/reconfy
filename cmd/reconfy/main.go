@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/andrewheberle/reconfy/pkg/watcher"
 	"github.com/oklog/run"
@@ -22,6 +23,7 @@ func main() {
 
 	// pull from env and bind flags to viper
 	viper.SetEnvPrefix("reconfy")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("_", "."))
 	viper.AutomaticEnv()
 	viper.BindPFlags(pflag.CommandLine)
 
