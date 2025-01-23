@@ -3,10 +3,12 @@ package watcher
 import (
 	"fmt"
 	"log/slog"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/a8m/envsubst"
@@ -91,6 +93,13 @@ func (w *Watcher) Watch() error {
 }
 
 func (w *Watcher) watchLoop() {
+	var (
+		mu sync.Mutex
+
+		wait = 100 * time.Millisecond
+
+		timers = make(map[string]*time.Timer)
+	)
 	slog.Debug("starting watch loop")
 	defer func() {
 		slog.Debug("watch loop finishing")
@@ -98,42 +107,70 @@ func (w *Watcher) watchLoop() {
 
 	for {
 		select {
-		case event, ok := <-w.watcher.Events:
-			if !ok {
-				return
-			}
-
-			slog.Debug("event from watcher", "name", event.Name, "op", event.Op)
-
-			if event.Has(fsnotify.Write) {
-				slog.Info("change detected", "input", w.input)
-				if err := w.envsubst(); err != nil {
-					slog.Error("problem during envsubst", "error", err, "input", w.input, "output", w.output)
-					continue
-				}
-
-				// do webhook request
-				res, err := w.client.Get(w.webhook)
-				if err != nil {
-					slog.Error("error calling webhook", "error", err, "input", w.input, "webhook", w.webhook)
-					continue
-				}
-
-				// close body immediately
-				res.Body.Close()
-
-				// check response
-				if res.StatusCode != http.StatusOK {
-					slog.Error("got a non 200 response", "response", res.StatusCode)
-					continue
-				}
-			}
 		case err, ok := <-w.watcher.Errors:
 			if !ok {
 				return
 			}
 
 			slog.Error("error from watcher", "error", err)
+
+		case event, ok := <-w.watcher.Events:
+			if !ok {
+				return
+			}
+
+			slog.Debug("event from watcher", "name", event.Name, "op", event.Op)
+			if !event.Has(fsnotify.Write) && event.Has(fsnotify.Create) {
+				continue
+			}
+
+			slog.Info("change detected", "input", w.input)
+
+			// get timer
+			mu.Lock()
+			t, ok := timers[event.Name]
+			mu.Unlock()
+
+			// no timer found
+			if !ok {
+				t = time.AfterFunc(math.MaxInt64, func() {
+					// clean up timer
+					defer func() {
+						mu.Lock()
+						delete(timers, event.Name)
+						mu.Unlock()
+					}()
+
+					if err := w.envsubst(); err != nil {
+						slog.Error("problem during envsubst", "error", err, "input", w.input, "output", w.output)
+						return
+					}
+
+					// do webhook request
+					res, err := w.client.Get(w.webhook)
+					if err != nil {
+						slog.Error("error calling webhook", "error", err, "input", w.input, "webhook", w.webhook)
+						return
+					}
+
+					// close body immediately
+					res.Body.Close()
+
+					// check response
+					if res.StatusCode != http.StatusOK {
+						slog.Error("got a non 200 response", "response", res.StatusCode)
+						return
+					}
+				})
+				t.Stop()
+
+				mu.Lock()
+				timers[event.Name] = t
+				mu.Unlock()
+			}
+
+			// reset timer
+			t.Reset(wait)
 		}
 	}
 }
