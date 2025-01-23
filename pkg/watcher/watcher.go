@@ -178,6 +178,11 @@ func (w *Watcher) watchLoop(watch *fsnotify.Watcher) {
 						return
 					}
 
+					// finish here if no url is set
+					if w.webhookUrl == nil {
+						return
+					}
+
 					// do webhook request
 					slog.Info("sending request to webhook", "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod)
 					res, err := w.client.Do(&http.Request{
