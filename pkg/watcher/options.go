@@ -32,7 +32,7 @@ func WithWebhookMethod(method string) WatcherOption {
 	}
 }
 
-func WithWebhookOutput(output string) WatcherOption {
+func WithOutput(output string) WatcherOption {
 	return func(w *Watcher) {
 		w.output = output
 	}
