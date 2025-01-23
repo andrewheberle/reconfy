@@ -20,6 +20,9 @@ type Watcher struct {
 	client  *http.Client
 	webhook string
 	done    chan bool
+
+	// File permission bits for output file
+	FileMode os.FileMode
 }
 
 func NewWatcher(input, output, webhook string) (*Watcher, error) {
@@ -44,12 +47,13 @@ func NewWatcher(input, output, webhook string) (*Watcher, error) {
 	}
 
 	return &Watcher{
-		input:   input,
-		output:  output,
-		watcher: watcher,
-		client:  &http.Client{Timeout: time.Second * 5},
-		webhook: webhook,
-		done:    make(chan bool),
+		input:    input,
+		output:   output,
+		watcher:  watcher,
+		client:   &http.Client{Timeout: time.Second * 5},
+		webhook:  webhook,
+		done:     make(chan bool),
+		FileMode: 0644,
 	}, nil
 }
 
@@ -147,7 +151,7 @@ func (w *Watcher) envsubst() error {
 	}
 
 	// write new config file
-	if err := writefile(w.output, data, 0644); err != nil {
+	if err := writefile(w.output, data, w.FileMode); err != nil {
 		return err
 	}
 
