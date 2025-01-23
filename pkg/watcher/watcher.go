@@ -29,7 +29,7 @@ type Watcher struct {
 
 func NewWatcher(input, output, webhookUrl, webhookMethod string) (*Watcher, error) {
 	if input == "" || webhookUrl == "" || webhookMethod == "" {
-		return nil, fmt.Errorf("input, webhookUrl and wewebhookMethod must be provided")
+		return nil, fmt.Errorf("input, webhook-url and webhook-method must be provided")
 	}
 
 	// validate url
@@ -68,7 +68,7 @@ func (w *Watcher) Close() error {
 }
 
 func (w *Watcher) Watch() error {
-	slog.Info("starting watch", "input", w.input, "webhook.url", w.webhookUrl, "webhook.method", w.webhookMethod)
+	slog.Info("starting watch", "input", w.input, "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod)
 
 	// Create a new watcher.
 	watch, err := fsnotify.NewWatcher()
@@ -185,7 +185,7 @@ func (w *Watcher) watchLoop(watch *fsnotify.Watcher) {
 					}
 					res, err := w.client.Do(req)
 					if err != nil {
-						slog.Error("error calling webhook", "error", err, "input", w.input, "webhook.url", w.webhookUrl, "webhook.method", w.webhookMethod)
+						slog.Error("error calling webhook", "error", err, "input", w.input, "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod)
 						return
 					}
 
