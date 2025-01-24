@@ -28,6 +28,11 @@ type Watcher struct {
 	FileMode os.FileMode
 }
 
+const (
+	DefaultFileMode      os.FileMode = 0644
+	DefaultWebhookMethod             = http.MethodPost
+)
+
 func NewWatcher(input string, opts ...WatcherOption) (*Watcher, error) {
 	if input == "" {
 		return nil, fmt.Errorf("input must not be empty")
@@ -36,7 +41,8 @@ func NewWatcher(input string, opts ...WatcherOption) (*Watcher, error) {
 	w := new(Watcher)
 
 	// set defaults
-	w.FileMode = 0644
+	w.webhookMethod = DefaultWebhookMethod
+	w.FileMode = DefaultFileMode
 	w.client = &http.Client{Timeout: time.Second * 5}
 	w.done = make(chan bool)
 
@@ -69,7 +75,7 @@ func (w *Watcher) Close() error {
 }
 
 func (w *Watcher) Watch() error {
-	slog.Info("starting watch", "input", w.input, "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod)
+	slog.Info("starting watch", "input", w.input, "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod, "watch-fileonly", w.fileonly)
 
 	// Create a new watcher.
 	watch, err := fsnotify.NewWatcher()
