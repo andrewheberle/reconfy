@@ -169,7 +169,7 @@ func (w *Watcher) watchLoop(watch *fsnotify.Watcher) {
 				continue
 			}
 
-			slog.Info("change detected", "input", w.input)
+			slog.Debug("change detected (may be dupes)", "input", w.input, "op", event.Op)
 
 			// get timer
 			mu.Lock()
@@ -179,6 +179,9 @@ func (w *Watcher) watchLoop(watch *fsnotify.Watcher) {
 			// no timer found
 			if !ok {
 				t = time.AfterFunc(math.MaxInt64, func() {
+					// we are doing some work
+					slog.Info("change detected and actioned", "input", w.input, "op", event.Op)
+
 					// clean up timer
 					defer func() {
 						mu.Lock()
