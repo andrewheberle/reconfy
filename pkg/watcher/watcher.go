@@ -191,30 +191,13 @@ func (w *Watcher) watchLoop(watch *fsnotify.Watcher) {
 						return
 					}
 
-					// finish here if no url is set
-					if w.webhookUrl == nil {
-						return
-					}
-
 					// do webhook request
-					slog.Info("sending request to webhook", "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod)
-					res, err := w.client.Do(&http.Request{
-						Method: w.webhookMethod,
-						URL:    w.webhookUrl,
-					})
-					if err != nil {
-						slog.Error("error calling webhook", "error", err, "input", w.input, "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod)
+					if err := w.webhook(); err != nil {
+						slog.Error("error during webhook call", "error", err, "input", w.input, "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod)
 						return
 					}
 
-					// close body immediately
-					res.Body.Close()
-
-					// check response
-					if res.StatusCode != http.StatusOK {
-						slog.Error("got a non 200 response", "response", res.StatusCode)
-						return
-					}
+					slog.Info("webhook request completed successfully", "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod)
 				})
 				t.Stop()
 
@@ -244,6 +227,33 @@ func (w *Watcher) envsubst() error {
 	// write new config file
 	if err := writefile(w.output, data, w.FileMode); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (w *Watcher) webhook() error {
+	// finish here if no url is set
+	if w.webhookUrl == nil {
+		return nil
+	}
+
+	// do webhook request
+	slog.Info("sending request to webhook", "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod)
+	res, err := w.client.Do(&http.Request{
+		Method: w.webhookMethod,
+		URL:    w.webhookUrl,
+	})
+	if err != nil {
+		return err
+	}
+
+	// close body immediately
+	res.Body.Close()
+
+	// check response
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("got a non 200 response from webhook: %d", res.StatusCode)
 	}
 
 	return nil
