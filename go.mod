@@ -4,7 +4,7 @@ go 1.22.4
 
 require (
 	github.com/a8m/envsubst v1.4.2
-	github.com/fsnotify/fsnotify v1.7.0
+	github.com/fsnotify/fsnotify v1.8.0
 	github.com/oklog/run v1.1.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.19.0
