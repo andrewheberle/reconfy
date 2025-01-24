@@ -22,6 +22,7 @@ type Watcher struct {
 	webhookUrl    *url.URL
 	webhookMethod string
 	done          chan bool
+	fileonly      bool
 
 	// File permission bits for output file
 	FileMode os.FileMode
@@ -99,8 +100,14 @@ func (w *Watcher) Watch() error {
 	}
 
 	// add path to watcher
-	if err := watch.Add(filepath.Dir(w.input)); err != nil {
-		return fmt.Errorf("could not add path to watcher: %w", err)
+	if w.fileonly {
+		if err := watch.Add(w.input); err != nil {
+			return fmt.Errorf("could not add path to watcher: %w", err)
+		}
+	} else {
+		if err := watch.Add(filepath.Dir(w.input)); err != nil {
+			return fmt.Errorf("could not add path to watcher: %w", err)
+		}
 	}
 
 	slog.Debug("waiting here until done")

@@ -1,8 +1,8 @@
 package watcher
 
 import (
-	"os"
 	"net/url"
+	"os"
 )
 
 type WatcherOption func(*Watcher)
@@ -20,7 +20,7 @@ func WithWebhookUrl(webhookUrl string) WatcherOption {
 		// set as nil if parse fails
 		u = nil
 	}
-	
+
 	return func(w *Watcher) {
 		w.webhookUrl = u
 	}
@@ -35,5 +35,11 @@ func WithWebhookMethod(method string) WatcherOption {
 func WithOutput(output string) WatcherOption {
 	return func(w *Watcher) {
 		w.output = output
+	}
+}
+
+func WithWatchFileOnly() WatcherOption {
+	return func(w *Watcher) {
+		w.fileonly = true
 	}
 }

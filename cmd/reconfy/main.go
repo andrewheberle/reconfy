@@ -18,6 +18,7 @@ func main() {
 	pflag.String("output", "", "Output path for environment variable substitutions")
 	pflag.String("webhook-url", "http://localhost:8080", "Webhook URL")
 	pflag.String("webhook-method", http.MethodPost, "Webhook method")
+	pflag.Bool("watch-fileonly", false, "Watch file directly, not parent directory")
 	pflag.Bool("debug", false, "Enable debug logging")
 	pflag.Parse()
 
@@ -46,6 +47,9 @@ func main() {
 	if method := viper.GetString("webhook-method"); method != "" {
 		opts = append(opts, watcher.WithWebhookMethod(method))
 	}
+	if viper.GetBool("watch-fileonly") {
+		opts = append(opts, watcher.WithWatchFileOnly())
+	}
 
 	// set up watcher
 	w, err := watcher.NewWatcher(viper.GetString("input"), opts...)
@@ -56,6 +60,7 @@ func main() {
 			"output", viper.GetString("output"),
 			"webhook-url", viper.GetString("webhook-url"),
 			"webhook-method", viper.GetString("webhook-method"),
+			"watch-fileonly", viper.GetString("watch-fileonly"),
 		)
 		os.Exit(1)
 	}
