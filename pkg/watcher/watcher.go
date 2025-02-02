@@ -40,7 +40,7 @@ func NewWatcher(input interface{}, opts ...WatcherOption) (*Watcher, error) {
 	}
 
 	inputs := make([]string, 0)
-	switch v := input.(type) {
+	switch _, v := input.(type) {
 		case []string:
 		inputs = v
 		case string:
@@ -69,7 +69,7 @@ func NewWatcher(input interface{}, opts ...WatcherOption) (*Watcher, error) {
 
 	// clean up input paths
 	w.inputs = make([]string, 0)
-	for v := range inputs {
+	for _, v := range inputs {
 		w.inputs = append(w.inputs, filepath.Clean(v))
 	}
 
@@ -107,7 +107,7 @@ func (w *Watcher) Watch() error {
 	// start watcher loop
 	go w.watchLoop(watch)
 
-	for input := range w.inputs {
+	for _, input := range w.inputs {
 		slog.Debug("adding path to watcher", "path", input)
 		// check input file exists
 		stat, err := os.Lstat(input)
@@ -206,13 +206,13 @@ func (w *Watcher) watchLoop(watch *fsnotify.Watcher) {
 					}()
 
 					if err := w.envsubst(); err != nil {
-						slog.Error("problem during envsubst", "error", err, "input", w.input, "output", w.output)
+						slog.Error("problem during envsubst", "error", err, "input", w.input[0], "output", w.output)
 						return
 					}
 
 					// do webhook request
 					if err := w.webhook(); err != nil {
-						slog.Error("error during webhook call", "error", err, "input", w.input, "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod)
+						slog.Error("error during webhook call", "error", err, "inputs", w.inputs, "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod)
 						return
 					}
 
