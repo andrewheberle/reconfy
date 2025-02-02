@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 
@@ -179,12 +180,12 @@ func (w *Watcher) watchLoop(watch *fsnotify.Watcher) {
 			}
 
 			// check if change was for our watched file
-			if event.Name != w.input {
-				slog.Debug("event was not for our watched file", "name", event.Name)
+			if slices.Contains(w.inputs, event.Name) {
+				slog.Debug("event was not for one of our watched files", "name", event.Name)
 				continue
 			}
 
-			slog.Debug("change detected (may be dupes)", "input", w.input, "op", event.Op)
+			slog.Debug("change detected (may be dupes)", "inputs", w.inputs, "op", event.Op)
 
 			// get timer
 			mu.Lock()
@@ -237,7 +238,7 @@ func (w *Watcher) envsubst() error {
 	}
 
 	// do environment variable substitutions
-	data, err := envsubst.ReadFile(w.input)
+	data, err := envsubst.ReadFile(w.inputs[0])
 	if err != nil {
 		return err
 	}
