@@ -34,7 +34,7 @@ const (
 	DefaultWebhookMethod             = http.MethodPost
 )
 
-func NewWatcher(input interface, opts ...WatcherOption) (*Watcher, error) {
+func NewWatcher(input interface{}, opts ...WatcherOption) (*Watcher, error) {
 	if input == nil {
 		return nil, fmt.Errorf("input must not be nil")
 	}
