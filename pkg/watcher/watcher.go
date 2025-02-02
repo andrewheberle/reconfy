@@ -40,7 +40,7 @@ func NewWatcher(input interface{}, opts ...WatcherOption) (*Watcher, error) {
 	}
 
 	inputs := make([]string, 0)
-	switch _, v := input.(type) {
+	switch v := input.(type) {
 		case []string:
 		inputs = v
 		case string:
