@@ -206,7 +206,7 @@ func (w *Watcher) watchLoop(watch *fsnotify.Watcher) {
 					}()
 
 					if err := w.envsubst(); err != nil {
-						slog.Error("problem during envsubst", "error", err, "input", w.input[0], "output", w.output)
+						slog.Error("problem during envsubst", "error", err, "input", w.inputs[0], "output", w.output)
 						return
 					}
 
