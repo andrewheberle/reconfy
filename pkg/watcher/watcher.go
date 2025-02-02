@@ -16,7 +16,7 @@ import (
 )
 
 type Watcher struct {
-	input         string
+	inputs        []string
 	output        string
 	client        *http.Client
 	webhookUrl    *url.URL
@@ -33,9 +33,19 @@ const (
 	DefaultWebhookMethod             = http.MethodPost
 )
 
-func NewWatcher(input string, opts ...WatcherOption) (*Watcher, error) {
-	if input == "" {
-		return nil, fmt.Errorf("input must not be empty")
+func NewWatcher(input interface, opts ...WatcherOption) (*Watcher, error) {
+	if input == nil {
+		return nil, fmt.Errorf("input must not be nil")
+	}
+
+	inputs := make([]string, 0)
+	switch v := input.(type) {
+		case []string:
+		inputs = v
+		case string:
+		inputs = []string{v}
+		default:
+		return nil, fmt.Errorf("input must be a string or []string")
 	}
 
 	w := new(Watcher)
@@ -56,11 +66,14 @@ func NewWatcher(input string, opts ...WatcherOption) (*Watcher, error) {
 		return nil, fmt.Errorf("a valid webhook url or an output path (or both) must be provided")
 	}
 
-	// clean up input path
-	w.input = filepath.Clean(input)
+	// clean up input paths
+	w.inputs = make([]string, 0)
+	for v := range inputs {
+		w.inputs = append(w.inputs, filepath.Clean(v))
+	}
 
 	// ensure input and output are not the same
-	if w.input == w.output {
+	if w.inputs[0] == w.output {
 		return nil, fmt.Errorf("input and output path cannot be the same")
 	}
 
@@ -93,26 +106,28 @@ func (w *Watcher) Watch() error {
 	// start watcher loop
 	go w.watchLoop(watch)
 
-	slog.Debug("adding path to watcher", "path", w.input)
-	// check input file exists
-	stat, err := os.Lstat(w.input)
-	if err != nil {
-		return fmt.Errorf("could not stat input file %s: %w", w.input, err)
-	}
-
-	// make sure it's not a directory
-	if stat.IsDir() {
-		return fmt.Errorf("%s is a directory", w.input)
-	}
-
-	// add path to watcher
-	if w.fileonly {
-		if err := watch.Add(w.input); err != nil {
-			return fmt.Errorf("could not add path to watcher: %w", err)
+	for input := range w.inputs {
+		slog.Debug("adding path to watcher", "path", w.input)
+		// check input file exists
+		stat, err := os.Lstat(input)
+		if err != nil {
+			return fmt.Errorf("could not stat input file %s: %w", w.input, err)
 		}
-	} else {
-		if err := watch.Add(filepath.Dir(w.input)); err != nil {
-			return fmt.Errorf("could not add path to watcher: %w", err)
+		
+		// make sure it's not a directory
+		if stat.IsDir() {
+			return fmt.Errorf("%s is a directory", w.input)
+		}
+		
+		// add path to watcher
+		if w.fileonly {
+			if err := watch.Add(input); err != nil {
+				return fmt.Errorf("could not add path to watcher: %w", err)
+			}
+		} else {
+			if err := watch.Add(filepath.Dir(input)); err != nil {
+				return fmt.Errorf("could not add path to watcher: %w", err)
+			}
 		}
 	}
 
