@@ -89,7 +89,7 @@ func (w *Watcher) Close() error {
 }
 
 func (w *Watcher) Watch() error {
-	slog.Info("starting watch", "input", w.input, "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod, "watch-fileonly", w.fileonly)
+	slog.Info("starting watch", "inputs", w.inputs, "webhook-url", w.webhookUrl, "webhook-method", w.webhookMethod, "watch-fileonly", w.fileonly)
 
 	// Create a new watcher.
 	watch, err := fsnotify.NewWatcher()
@@ -108,16 +108,16 @@ func (w *Watcher) Watch() error {
 	go w.watchLoop(watch)
 
 	for input := range w.inputs {
-		slog.Debug("adding path to watcher", "path", w.input)
+		slog.Debug("adding path to watcher", "path", input)
 		// check input file exists
 		stat, err := os.Lstat(input)
 		if err != nil {
-			return fmt.Errorf("could not stat input file %s: %w", w.input, err)
+			return fmt.Errorf("could not stat input file %s: %w", input, err)
 		}
 		
 		// make sure it's not a directory
 		if stat.IsDir() {
-			return fmt.Errorf("%s is a directory", w.input)
+			return fmt.Errorf("%s is a directory", input)
 		}
 		
 		// add path to watcher
@@ -196,7 +196,7 @@ func (w *Watcher) watchLoop(watch *fsnotify.Watcher) {
 			if !ok {
 				t = time.AfterFunc(math.MaxInt64, func() {
 					// we are doing some work
-					slog.Info("change detected and actioned", "input", w.input, "op", event.Op)
+					slog.Info("change detected and actioned", "inputs", w.inputs, "op", event.Op)
 
 					// clean up timer
 					defer func() {
