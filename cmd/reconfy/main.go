@@ -14,7 +14,7 @@ import (
 
 func main() {
 	// command line args
-	pflag.String("input", "", "Input file path to watch for changes")
+	pflag.StringSlice("input", []string{}, "Input file path to watch for changes")
 	pflag.String("output", "", "Output path for environment variable substitutions")
 	pflag.String("webhook-url", "http://localhost:8080", "Webhook URL")
 	pflag.String("webhook-method", http.MethodPost, "Webhook method")
@@ -52,11 +52,11 @@ func main() {
 	}
 
 	// set up watcher
-	w, err := watcher.NewWatcher(viper.GetString("input"), opts...)
+	w, err := watcher.NewWatcher(viper.GetStringSlice("input"), opts...)
 	if err != nil {
 		slog.Error("could not create watcher",
 			"error", err,
-			"input", viper.GetString("input"),
+			"input", viper.GetStringSlice("input"),
 			"output", viper.GetString("output"),
 			"webhook-url", viper.GetString("webhook-url"),
 			"webhook-method", viper.GetString("webhook-method"),
