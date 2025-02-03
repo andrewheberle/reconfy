@@ -4,7 +4,25 @@
 
 This can be used to trigger a webhook when a file changes.
 
-In addition environment variables may be substituted within the file using Kubernetes syntax.
+In addition environment variables may be substituted within the file using Kubernetes syntax. For example, given the input file below:
+
+```yaml
+this: is a static value
+whileThis: $(FROM_THIS_ENV_VAR)
+```
+
+Would result in the following output:
+
+```yaml
+this: is a static value
+whileThis: came from an env var
+```
+
+Assuming the following command was executed:
+
+```sh
+env FROM_THIS_ENV_VAR="came from an env var" reconfy --input ./input.yml --output ./output.yml
+```
 
 ## Command Line Options
 
