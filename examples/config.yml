@@ -1,0 +1,9 @@
+reloaders:
+  - name: first
+    input: examples/input1.yml
+    output: examples/output1.yml
+    webhook: http://localhost:8080
+  - name: second
+    input: examples/input2.yml
+    output: examples/output2.yml
+    webhook: http://localhost:8081

@@ -1,0 +1,3 @@
+from: input2.yml
+staticKey: another
+envKey: $(ENV_VAR2)

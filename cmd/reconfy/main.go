@@ -22,15 +22,16 @@ func main() {
 	pflag.String("input", "", "Input file path to watch for changes")
 	pflag.String("output", "", "Output path for environment variable substitutions")
 	pflag.String("webhook", "http://localhost:8080", "Webhook URL")
-	pflag.StringSlice("watch-dirs", []string{}, "Additional directories to watch for changes")
-	pflag.String("metrics-listen", "", "Listen address for metrics")
-	pflag.String("metrics-path", "/metrics", "Path for metrics")
-	pflag.Bool("ignore-missing", false, "Ignore missing environment variables when performing substitutions")
+	pflag.StringSlice("watchdirs", []string{}, "Additional directories to watch for changes")
+	pflag.String("metrics.listen", "", "Listen address for metrics")
+	pflag.String("metrics.path", "/metrics", "Path for metrics")
+	pflag.Bool("ignoremissing", false, "Ignore missing environment variables when performing substitutions")
+	pflag.String("config", "", "Configuration file to load (supports multiple reloaders)")
 	pflag.Parse()
 
 	// pull from env and bind flags to viper
 	viper.SetEnvPrefix("reconfy")
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	viper.AutomaticEnv()
 	viper.BindPFlags(pflag.CommandLine)
 
@@ -38,25 +39,19 @@ func main() {
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	logger = log.With(logger, "ts", log.DefaultTimestamp, "caller", log.DefaultCaller)
 
-	// check input path
-	if viper.GetString("input") == "" {
-		logger.Log("msg", "input cannot be empty")
-		os.Exit(1)
-	}
-
-	// parse provided url
-	u, err := url.Parse(viper.GetString("webhook"))
+	// parse config/flags and get list of reloaders
+	reloaders, err := LoadConfig(viper.GetString("config"))
 	if err != nil {
-		logger.Log("msg", "error with webhook url", "error", err)
+		logger.Log("msg", "problem loading config", "error", err)
 		os.Exit(1)
 	}
 
 	// set up metrics
 	var srv *http.Server
 	reg := prometheus.NewRegistry()
-	if listen := viper.GetString("metrics-listen"); listen != "" {
+	if listen := viper.GetString("metrics.listen"); listen != "" {
 		r := http.NewServeMux()
-		r.Handle(viper.GetString("metrics-path"), promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
+		r.Handle(viper.GetString("metrics.path"), promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 		srv = &http.Server{
 			Addr:         listen,
 			Handler:      r,
@@ -65,27 +60,66 @@ func main() {
 		}
 	}
 
-	// set up reloader
-	r := reloader.New(logger, reg, &reloader.Options{
-		ReloadURL:                     u,
-		CfgFile:                       viper.GetString("input"),
-		CfgOutputFile:                 viper.GetString("output"),
-		WatchedDirs:                   viper.GetStringSlice("watch-dirs"),
-		WatchInterval:                 3 * time.Minute,
-		RetryInterval:                 5 * time.Second,
-		DelayInterval:                 1 * time.Second,
-		TolerateEnvVarExpansionErrors: viper.GetBool("ignore-missing"),
-	})
-	ctx, cancel := context.WithCancel(context.Background())
-
 	var g run.Group
 	{
-		// add reloader
-		g.Add(func() error {
-			return r.Watch(ctx)
-		}, func(err error) {
-			cancel()
-		})
+		// loop through reloaders
+		for n, rl := range reloaders {
+			// set up specific logger for reloader
+			thisLogger := logger
+			if rl.Name != "" {
+				thisLogger = log.With(logger, "name", rl.Name)
+			}
+
+			// parse provided url
+			u, err := url.Parse(rl.Webhook)
+			if err != nil {
+				thisLogger.Log("msg", "error with webhook url", "error", err)
+				os.Exit(1)
+			}
+
+			if n == 0 {
+				// set up reloader (only first gets metrics)
+				r := reloader.New(thisLogger, reg, &reloader.Options{
+					ReloadURL:                     u,
+					CfgFile:                       rl.Input,
+					CfgOutputFile:                 rl.Output,
+					WatchedDirs:                   rl.Watchdirs,
+					WatchInterval:                 3 * time.Minute,
+					RetryInterval:                 5 * time.Second,
+					DelayInterval:                 1 * time.Second,
+					TolerateEnvVarExpansionErrors: viper.GetBool("ignoremissing"),
+				})
+				ctx, cancel := context.WithCancel(context.Background())
+
+				// add reloader
+				g.Add(func() error {
+					return r.Watch(ctx)
+				}, func(err error) {
+					cancel()
+				})
+			} else {
+				// set up reloader (only first gets metrics)
+				r := reloader.New(thisLogger, nil, &reloader.Options{
+					ReloadURL:                     u,
+					CfgFile:                       rl.Input,
+					CfgOutputFile:                 rl.Output,
+					WatchedDirs:                   rl.Watchdirs,
+					WatchInterval:                 3 * time.Minute,
+					RetryInterval:                 5 * time.Second,
+					DelayInterval:                 1 * time.Second,
+					TolerateEnvVarExpansionErrors: viper.GetBool("ignoremissing"),
+				})
+				ctx, cancel := context.WithCancel(context.Background())
+
+				// add reloader
+				g.Add(func() error {
+					return r.Watch(ctx)
+				}, func(err error) {
+					cancel()
+				})
+			}
+
+		}
 
 		// add metrics server
 		if srv != nil {
@@ -93,7 +127,7 @@ func main() {
 				return srv.ListenAndServe()
 			}, func(err error) {
 				go func() {
-					ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 					srv.Shutdown(ctx)
 					cancel()
 				}()

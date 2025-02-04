@@ -1,0 +1,2 @@
+staticKey: here
+envKey: $(ENV_VAR)
