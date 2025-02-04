@@ -110,7 +110,7 @@ func main() {
 		// add metrics server
 		if srv != nil {
 			g.Add(func() error {
-				logger.Log("msg", "starting metrics HTTP server", "addr", srv.Addr)
+				logger.Log("msg", "starting metrics HTTP server", "listen", viper.GetString("metrics.listen"), "path", viper.GetString("metrics.path"))
 				return srv.ListenAndServe()
 			}, func(err error) {
 				go func() {
