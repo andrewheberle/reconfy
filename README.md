@@ -24,6 +24,8 @@ Assuming the following command was executed:
 env FROM_THIS_ENV_VAR="came from an env var" reconfy --input ./input.yml --output ./output.yml
 ```
 
+Please note that the substitution of variables can be anywhere in a file or any type, not just the values in a YAML document.
+
 ## Command Line Options
 
 * `--input`: Input file to watch
