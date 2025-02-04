@@ -41,7 +41,7 @@ All command line options may be specified as environment variables in the form o
 
 ## Watching Multiple Directories
 
-It is possible to specify the `--watch-dirs` option multiple times or provide a comma seperated list of additional directories to watch for changes. 
+It is possible to specify the `--watchdirs` option multiple times or provide a comma seperated list of additional directories to watch for changes. 
 
 All provided directories will be watched for changes and trigger reloads, but no environment variable substitution is performed on these files. 
 
@@ -58,9 +58,12 @@ reloaders:
   - name: second
     input: examples/input2.yml
     output: examples/output2.yml
+    watchdirs:
+      - examples/dir1
+      - examples/dir2
     webhook: http://localhost:8081
 ```
 
-The `name` is optional however it is recommended as this is added to log entries for that reloader.
+The `name` is optional however it is recommended as this is added to log entries for that reloader and also added as the `reloader` label to that reloaders metrics (if enabled). 
 
 It is important to ensure that the input and output locations for multiple reloaders do not overlap as this would cause an infinite loop of webhook triggers.

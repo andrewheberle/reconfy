@@ -48,10 +48,10 @@ func main() {
 
 	// set up metrics
 	var srv *http.Server
-	reg := prometheus.NewRegistry()
+	globalRegistry := prometheus.NewRegistry()
 	if listen := viper.GetString("metrics.listen"); listen != "" {
 		r := http.NewServeMux()
-		r.Handle(viper.GetString("metrics.path"), promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
+		r.Handle(viper.GetString("metrics.path"), promhttp.HandlerFor(globalRegistry, promhttp.HandlerOpts{Registry: globalRegistry}))
 		srv = &http.Server{
 			Addr:         listen,
 			Handler:      r,
@@ -63,7 +63,7 @@ func main() {
 	var g run.Group
 	{
 		// loop through reloaders
-		for n, rl := range reloaders {
+		for _, rl := range reloaders {
 			// set up specific logger for reloader
 			thisLogger := logger
 			if rl.Name != "" {
@@ -77,53 +77,40 @@ func main() {
 				os.Exit(1)
 			}
 
-			if n == 0 {
-				// set up reloader (only first gets metrics)
-				r := reloader.New(thisLogger, reg, &reloader.Options{
-					ReloadURL:                     u,
-					CfgFile:                       rl.Input,
-					CfgOutputFile:                 rl.Output,
-					WatchedDirs:                   rl.Watchdirs,
-					WatchInterval:                 3 * time.Minute,
-					RetryInterval:                 5 * time.Second,
-					DelayInterval:                 1 * time.Second,
-					TolerateEnvVarExpansionErrors: viper.GetBool("ignoremissing"),
-				})
-				ctx, cancel := context.WithCancel(context.Background())
-
-				// add reloader
-				g.Add(func() error {
-					return r.Watch(ctx)
-				}, func(err error) {
-					cancel()
-				})
-			} else {
-				// set up reloader (only first gets metrics)
-				r := reloader.New(thisLogger, nil, &reloader.Options{
-					ReloadURL:                     u,
-					CfgFile:                       rl.Input,
-					CfgOutputFile:                 rl.Output,
-					WatchedDirs:                   rl.Watchdirs,
-					WatchInterval:                 3 * time.Minute,
-					RetryInterval:                 5 * time.Second,
-					DelayInterval:                 1 * time.Second,
-					TolerateEnvVarExpansionErrors: viper.GetBool("ignoremissing"),
-				})
-				ctx, cancel := context.WithCancel(context.Background())
-
-				// add reloader
-				g.Add(func() error {
-					return r.Watch(ctx)
-				}, func(err error) {
-					cancel()
-				})
+			// set reloader options
+			rOptions := &reloader.Options{
+				ReloadURL:                     u,
+				CfgFile:                       rl.Input,
+				CfgOutputFile:                 rl.Output,
+				WatchedDirs:                   rl.Watchdirs,
+				WatchInterval:                 3 * time.Minute,
+				RetryInterval:                 5 * time.Second,
+				DelayInterval:                 1 * time.Second,
+				TolerateEnvVarExpansionErrors: viper.GetBool("ignoremissing"),
 			}
 
+			// set up reloader
+			name := rl.Name
+			if name == "" {
+				name = rl.Input
+			}
+			labels := prometheus.Labels{"reloader": name}
+			reg := prometheus.WrapRegistererWith(labels, globalRegistry)
+			r := reloader.New(thisLogger, reg, rOptions)
+
+			// add reloader to run group
+			ctx, cancel := context.WithCancel(context.Background())
+			g.Add(func() error {
+				return r.Watch(ctx)
+			}, func(err error) {
+				cancel()
+			})
 		}
 
 		// add metrics server
 		if srv != nil {
 			g.Add(func() error {
+				logger.Log("msg", "starting metrics HTTP server", "addr", srv.Addr)
 				return srv.ListenAndServe()
 			}, func(err error) {
 				go func() {

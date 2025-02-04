@@ -7,3 +7,5 @@ reloaders:
     input: examples/input2.yml
     output: examples/output2.yml
     webhook: http://localhost:8081
+    watchdirs:
+      - examples/dir1
