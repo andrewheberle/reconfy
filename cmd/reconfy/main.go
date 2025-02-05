@@ -40,7 +40,7 @@ func main() {
 	logger = log.With(logger, "ts", log.DefaultTimestamp, "caller", log.DefaultCaller)
 
 	// parse config/flags and get list of reloaders
-	reloaders, err := LoadConfig(viper.GetString("config"))
+	reloaders, err := LoadConfig(viper.GetViper(), viper.GetString("config"))
 	if err != nil {
 		logger.Log("msg", "problem loading config", "error", err)
 		os.Exit(1)

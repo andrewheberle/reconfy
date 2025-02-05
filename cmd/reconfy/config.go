@@ -30,30 +30,44 @@ type MetricsConfig struct {
 	Listen string
 }
 
-func LoadConfig(config string) ([]ReloaderConfig, error) {
+func LoadConfig(v *viper.Viper, config string) ([]ReloaderConfig, error) {
 	if config == "" {
 		// with no config just use flags
 		return []ReloaderConfig{
 			ReloaderConfig{
-				Input:     viper.GetString("input"),
-				Output:    viper.GetString("output"),
-				Webhook:   viper.GetString("webhook"),
-				Watchdirs: viper.GetStringSlice("watchdirs"),
+				Input:     v.GetString("input"),
+				Output:    v.GetString("output"),
+				Webhook:   v.GetString("webhook"),
+				Watchdirs: v.GetStringSlice("watchdirs"),
 			},
 		}, nil
 	}
 
 	// load config
-	viper.SetConfigFile(config)
-	if err := viper.ReadInConfig(); err != nil {
+	v.SetConfigFile(config)
+	if err := v.ReadInConfig(); err != nil {
 		return nil, err
 	}
 
-	// try to unmarshal as a multi reloader config multi
+	// try to unmarshal as a multi reloader config
 	var multi MultipleReloaderConfig
-	if err := viper.Unmarshal(&multi); err != nil {
+	if err := v.Unmarshal(&multi); err == nil {
+		return multi.Reloaders, nil
+	}
+
+	// try as a single reloader config
+	var single SingleReloaderConfig
+	if err := v.Unmarshal(&single); err != nil {
 		return nil, err
 	}
 
-	return multi.Reloaders, nil
+	return []ReloaderConfig{
+		ReloaderConfig{
+			Input:     single.Input,
+			Name:      single.Name,
+			Output:    single.Output,
+			Webhook:   single.Webhook,
+			Watchdirs: single.Watchdirs,
+		},
+	}, nil
 }
