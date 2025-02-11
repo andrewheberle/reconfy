@@ -2,7 +2,7 @@ module github.com/andrewheberle/reconfy
 
 go 1.23.0
 
-toolchain go1.23.6
+toolchain go1.24.0
 
 require (
 	github.com/a8m/envsubst v1.4.2
