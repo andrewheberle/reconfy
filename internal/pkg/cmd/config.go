@@ -1,6 +1,4 @@
-package main
-
-import "github.com/spf13/viper"
+package cmd
 
 type ReloaderConfig struct {
 	Name      string
@@ -30,34 +28,34 @@ type MetricsConfig struct {
 	Listen string
 }
 
-func LoadConfig(v *viper.Viper, config string) ([]ReloaderConfig, error) {
+func (c *rootCommand) loadConfig(config string) ([]ReloaderConfig, error) {
 	if config == "" {
 		// with no config just use flags
 		return []ReloaderConfig{
 			ReloaderConfig{
-				Input:     v.GetString("input"),
-				Output:    v.GetString("output"),
-				Webhook:   v.GetString("webhook"),
-				Watchdirs: v.GetStringSlice("watchdirs"),
+				Input:     c.viper.GetString("input"),
+				Output:    c.viper.GetString("output"),
+				Webhook:   c.viper.GetString("webhook"),
+				Watchdirs: c.viper.GetStringSlice("watchdirs"),
 			},
 		}, nil
 	}
 
 	// load config
-	v.SetConfigFile(config)
-	if err := v.ReadInConfig(); err != nil {
+	c.viper.SetConfigFile(config)
+	if err := c.viper.ReadInConfig(); err != nil {
 		return nil, err
 	}
 
 	// try to unmarshal as a multi reloader config
 	var multi MultipleReloaderConfig
-	if err := v.Unmarshal(&multi); err == nil {
+	if err := c.viper.Unmarshal(&multi); err == nil {
 		return multi.Reloaders, nil
 	}
 
 	// try as a single reloader config
 	var single SingleReloaderConfig
-	if err := v.Unmarshal(&single); err != nil {
+	if err := c.viper.Unmarshal(&single); err != nil {
 		return nil, err
 	}
 
