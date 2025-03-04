@@ -3,7 +3,7 @@ module github.com/andrewheberle/reconfy
 go 1.24.0
 
 require (
-	github.com/a8m/envsubst v1.4.2
+	github.com/a8m/envsubst v1.4.3
 	github.com/bep/simplecobra v0.6.0
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/go-kit/log v0.2.1
