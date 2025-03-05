@@ -1,2 +1,2 @@
 staticKey: here
-envKey: $(ENV_VAR)
+envKey: $(ENV_VAR1)

@@ -26,6 +26,12 @@ env FROM_THIS_ENV_VAR="came from an env var" reconfy --input ./input.yml --outpu
 
 Please note that the substitution of variables can be anywhere in a file or any type, not just the values in a YAML document.
 
+## Container
+
+```sh
+docker run -e FROM_THIS_ENV_VAR="some value" -v /path/to/config:/config gcr.io/andrewheberle/reconfy:v0.5.0 --input /config/input.yml --output /config/output.yml 
+```
+
 ## Command Line Options
 
 * `--input`: Input file to watch
