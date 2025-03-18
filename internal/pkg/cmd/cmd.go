@@ -57,7 +57,7 @@ func (c *rootCommand) Init(cd *simplecobra.Commandeer) error {
 		c.viper.SetEnvPrefix(c.viperEnvPrefix)
 	}
 	if c.viperStringReplacer != nil {
-		c.viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
+		c.viper.SetEnvKeyReplacer(c.viperStringReplacer)
 	}
 	c.viper.AutomaticEnv()
 
@@ -175,6 +175,7 @@ func Execute(args []string) error {
 		logger:         logger,
 		viper:          viper.New(),
 		viperEnvPrefix: "reconfy",
+		viperStringReplacer: strings.NewReplacer("-", "_", ".", "_"),
 	}
 	x, err := simplecobra.New(rootCmd)
 	if err != nil {
