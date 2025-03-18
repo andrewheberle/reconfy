@@ -37,7 +37,7 @@ func (c *rootCommand) Name() string {
 
 func (c *rootCommand) Init(cd *simplecobra.Commandeer) error {
 	cmd := cd.CobraCommand
-	cmd.Short = "DSP HTTP Service for RPi"
+	cmd.Short = "A simple reconfigurator"
 
 	// command line args
 	cmd.Flags().String("input", "", "Input file path to watch for changes")
