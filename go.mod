@@ -3,9 +3,7 @@ module github.com/andrewheberle/reconfy
 go 1.24.0
 
 require (
-	github.com/a8m/envsubst v1.4.3
 	github.com/bep/simplecobra v0.6.0
-	github.com/fsnotify/fsnotify v1.8.0
 	github.com/go-kit/log v0.2.1
 	github.com/oklog/run v1.1.0
 	github.com/prometheus/client_golang v1.21.1
@@ -17,6 +15,7 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
