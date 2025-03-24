@@ -98,6 +98,10 @@ func (c *rootCommand) Run(ctx context.Context, cd *simplecobra.Commandeer, args 
 	if listen := c.viper.GetString("metrics.listen"); listen != "" {
 		r := http.NewServeMux()
 		r.Handle(c.viper.GetString("metrics.path"), promhttp.HandlerFor(globalRegistry, promhttp.HandlerOpts{Registry: globalRegistry}))
+		r.HandleFunc("/-/healthy", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("Healthy"))
+		})
 		srv = &http.Server{
 			Addr:         listen,
 			Handler:      r,

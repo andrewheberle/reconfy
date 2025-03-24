@@ -29,19 +29,19 @@ Please note that the substitution of variables can be anywhere in a file or any 
 ## Container
 
 ```sh
-docker run -e FROM_THIS_ENV_VAR="some value" -v /path/to/config:/config gcr.io/andrewheberle/reconfy:v0.5.0 --input /config/input.yml --output /config/output.yml 
+docker run -e FROM_THIS_ENV_VAR="some value" -v /path/to/config:/config gcr.io/andrewheberle/reconfy:v0.5.4 --input /config/input.yml --output /config/output.yml 
 ```
 
 ## Command Line Options
 
-* `--input`: Input file to watch
-* `--output`: Output file for environment variable substitutions (optional)
-* `--webhook`: URL for webhook on reload (default "http://localhost:8080")
-* `--watchdirs`: Additional directories to watch for changes (optional)
-* `--metrics.listen`: Listen address for metrics (optional)
-* `--metrics.path`: Path for Prometheus metrics (default "/metrics")
-* `--ignoremissing`: Ignore missing environment variables when performing substitutions (default "false")
 * `--config`: Configuration file to load (supports multiple reloaders)
+* `--ignoremissing`: Ignore missing environment variables when performing substitutions
+* `--input`: Input file to watch
+* `--metrics.listen`: Listen address for metrics
+* `--metrics.path`: Path for Prometheus metrics (default "/metrics")
+* `--output`: Output file for environment variable substitutions
+* `--watchdirs`: Additional directories to watch for changes
+* `--webhook`: URL for webhook on reload (default "http://localhost:8080")
 
 All command line options may be specified as environment variables in the form of `RECONFY_<option>` such as `RECONFY_WEBHOOK="http://localhost:8080/reload"` or `RECONFY_METRICS_LISTEN=":8080"`.
 
@@ -73,3 +73,9 @@ reloaders:
 The `name` is optional for a single reloader however it is recommended as this is added to log entries for that reloader and also added as the `reloader` label to that reloaders metrics (if enabled). When using multiple reloaders the `name` must be unique.
 
 It is important to ensure that the input and output locations for multiple reloaders do not overlap as this would cause an infinite loop of webhook triggers.
+
+## Metrics
+
+If the `--metrics.listen` flag is provided, Prometheus metrics are exposed at `/metrics` (by default).
+
+This web service also exposes a `/-/healthy` endpoint to check if the service is up and running when enabled.
