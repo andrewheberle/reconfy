@@ -70,6 +70,6 @@ reloaders:
     webhook: http://localhost:8081
 ```
 
-The `name` is optional however it is recommended as this is added to log entries for that reloader and also added as the `reloader` label to that reloaders metrics (if enabled). 
+The `name` is optional for a single reloader however it is recommended as this is added to log entries for that reloader and also added as the `reloader` label to that reloaders metrics (if enabled). When using multiple reloaders the `name` must be unique.
 
 It is important to ensure that the input and output locations for multiple reloaders do not overlap as this would cause an infinite loop of webhook triggers.
