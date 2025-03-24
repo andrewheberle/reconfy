@@ -82,6 +82,11 @@ func (c *rootCommand) Run(ctx context.Context, cd *simplecobra.Commandeer, args 
 		return fmt.Errorf("problem loading config: %w", err)
 	}
 
+	// validate config
+	if err := validate(reloaders); err != nil {
+		return fmt.Errorf("invalid config: %w", err)
+	}
+
 	// set up metrics
 	var srv *http.Server
 	globalRegistry := prometheus.NewRegistry()
@@ -171,10 +176,10 @@ func Execute(args []string) error {
 
 	// set up rootCmd
 	rootCmd := &rootCommand{
-		name:           "reconfy",
-		logger:         logger,
-		viper:          viper.New(),
-		viperEnvPrefix: "reconfy",
+		name:                "reconfy",
+		logger:              logger,
+		viper:               viper.New(),
+		viperEnvPrefix:      "reconfy",
 		viperStringReplacer: strings.NewReplacer("-", "_", ".", "_"),
 	}
 	x, err := simplecobra.New(rootCmd)
