@@ -38,6 +38,11 @@ func (c *rootCommand) Name() string {
 func (c *rootCommand) Init(cd *simplecobra.Commandeer) error {
 	cmd := cd.CobraCommand
 	cmd.Short = "A simple reconfigurator"
+	cmd.Long = `reconfy will watch one or more configuration files and trigger a webhook when
+there are changes detected.
+
+In addition environment variables can be substituted within the file using
+Kubernetes syntax.`
 
 	// command line args
 	cmd.Flags().String("input", "", "Input file path to watch for changes")
@@ -90,9 +95,9 @@ func (c *rootCommand) Run(ctx context.Context, cd *simplecobra.Commandeer, args 
 	// set up metrics
 	var srv *http.Server
 	globalRegistry := prometheus.NewRegistry()
-	if listen := viper.GetString("metrics.listen"); listen != "" {
+	if listen := c.viper.GetString("metrics.listen"); listen != "" {
 		r := http.NewServeMux()
-		r.Handle(viper.GetString("metrics.path"), promhttp.HandlerFor(globalRegistry, promhttp.HandlerOpts{Registry: globalRegistry}))
+		r.Handle(c.viper.GetString("metrics.path"), promhttp.HandlerFor(globalRegistry, promhttp.HandlerOpts{Registry: globalRegistry}))
 		srv = &http.Server{
 			Addr:         listen,
 			Handler:      r,
@@ -126,7 +131,7 @@ func (c *rootCommand) Run(ctx context.Context, cd *simplecobra.Commandeer, args 
 				WatchInterval:                 3 * time.Minute,
 				RetryInterval:                 5 * time.Second,
 				DelayInterval:                 1 * time.Second,
-				TolerateEnvVarExpansionErrors: viper.GetBool("ignoremissing"),
+				TolerateEnvVarExpansionErrors: c.viper.GetBool("ignoremissing"),
 			}
 
 			// set up reloader
@@ -150,7 +155,7 @@ func (c *rootCommand) Run(ctx context.Context, cd *simplecobra.Commandeer, args 
 		// add metrics server
 		if srv != nil {
 			g.Add(func() error {
-				c.logger.Log("msg", "starting metrics HTTP server", "listen", viper.GetString("metrics.listen"), "path", viper.GetString("metrics.path"))
+				c.logger.Log("msg", "starting metrics HTTP server", "listen", c.viper.GetString("metrics.listen"), "path", c.viper.GetString("metrics.path"))
 				return srv.ListenAndServe()
 			}, func(err error) {
 				go func() {
@@ -176,7 +181,10 @@ func Execute(args []string) error {
 
 	// set up rootCmd
 	rootCmd := &rootCommand{
-		name:                "reconfy",
+		name: "reconfy",
+		commands: []simplecobra.Commander{
+			&versionCommand{name: "version"},
+		},
 		logger:              logger,
 		viper:               viper.New(),
 		viperEnvPrefix:      "reconfy",
