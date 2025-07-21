@@ -9,7 +9,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.20.1
-	github.com/thanos-io/thanos v0.39.1
+	github.com/thanos-io/thanos v0.39.2
 )
 
 require (
