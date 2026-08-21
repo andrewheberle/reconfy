@@ -1,13 +1,13 @@
 module github.com/andrewheberle/reconfy
 
-go 1.24.0
+go 1.26
 
 require (
-	github.com/bep/simplecobra v0.6.0
+	github.com/bep/simplecobra v0.8.0
 	github.com/go-kit/log v0.2.1
 	github.com/oklog/run v1.2.0
 	github.com/prometheus/client_golang v1.22.0
-	github.com/spf13/pflag v1.0.6
+	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.20.1
 	github.com/thanos-io/thanos v0.39.2
 )
@@ -33,7 +33,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.12.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
-	github.com/spf13/cobra v1.8.1 // indirect
+	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
